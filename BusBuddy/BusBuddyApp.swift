@@ -11,7 +11,7 @@ import SwiftUI
 struct BusBuddyApp: App {
     var body: some Scene {
         WindowGroup {
-            MapView() //This is for testing only
+            ContentView() //This is for testing only
             //LoginView() or ContentView()
         }
     }

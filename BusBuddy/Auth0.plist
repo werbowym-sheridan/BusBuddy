@@ -2,13 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>SchemeUserState</key>
-	<dict>
-		<key>BusBuddy.xcscheme_^#shared#^_</key>
-		<dict>
-			<key>orderHint</key>
-			<integer>6</integer>
-		</dict>
-	</dict>
+	<key>Domain</key>
+	<string>dev-l3o6ztmq8tg7hey4.us.auth0.com</string>
+	<key>ClientId</key>
+	<string>7pzgvk7hsCk1aUVZh0yzgqpbaaUW3Zvn</string>
 </dict>
 </plist>
