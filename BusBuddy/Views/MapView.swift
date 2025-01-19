@@ -180,11 +180,6 @@ struct MapView: View {
             } catch {
                 print("Error accessing route data: \(error)")
             }
-//            print(route[stopsPassed])
-//            if busLocations[70-timeRemaining].latitude == route[stopsPassed].latitude && busLocations[70-timeRemaining].longitude == route[stopsPassed].longitude {
-//                stopsPassed += 1
-//                print(stopsPassed)
-//            }
                 
         }
         
