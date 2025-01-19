@@ -53,12 +53,14 @@ struct ContentView: View {
                 }
                 .font(.custom("Marker Felt", size: 20))
                 .foregroundColor(.black)
-                .frame(maxWidth: .infinity)
-                .padding()
+                .padding(
+                )
+//                .frame(maxWidth: .infinity)
+                .frame(width: UIScreen.main.bounds.width - 32)
                 .background(Color("BusBuddy_Yellow"))
                 .cornerRadius(20)  // More rounded corners like in the image
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20)
+                    RoundedRectangle(cornerRadius: 36)
                         .stroke(Color.black, lineWidth: 1)
                 )
                 .padding(.horizontal, 40)  // Add some side padding to make button narrower
