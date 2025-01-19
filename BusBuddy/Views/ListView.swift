@@ -44,9 +44,12 @@ struct ListView: View {
                                     RouteCardView(
                                         stopName: stop.name,
                                         travelTime: calculateTravelTime(for: stop),
-                                        arrivalTime: calculateArrivalTime(for: stop),
+                                        arrivalTime: /*calculateArrivalTime(for: stop),*/
+                                        stop.stopTime
+                                        ,
                                         isCurrentZone: isUserZone(stop),
                                         stopNumber: stop.stopNumber
+                                        
                                     )
                                 }
                             }
@@ -94,17 +97,17 @@ struct ListView: View {
         do {
             let routeData: [RouteStops] = try await supabase
                 .from("route_stops")
-                .select("bus_stop (*), route_number, route_type, stop_number")
+                .select("bus_stop (*), route_number, route_type, stop_number, stop_time")
                 .eq("route_type", value: "pickup")
                 .order("stop_number", ascending: true)
                 .execute()
                 .value
                     
             for busStop in routeData {
-                busStops.append(RouteStopCoordinates(id: UUID(), coordinate: CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon), name: busStop.busStop.name, stopNumber: busStop.stopNumber, routeNumber: busStop.routeNumber, routeType: busStop.routeType))
+                busStops.append(RouteStopCoordinates(id: UUID(), coordinate: CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon), name: busStop.busStop.name, stopNumber: busStop.stopNumber, routeNumber: busStop.routeNumber, routeType: busStop.routeType, stopTime: busStop.stopTime))
                 route.append(CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon))
             }
-//            print(routeData)
+            print(routeData)
             
         } catch {
             debugPrint(error)

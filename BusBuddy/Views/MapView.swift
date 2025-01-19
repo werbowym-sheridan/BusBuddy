@@ -15,6 +15,8 @@ struct RouteStopCoordinates: Identifiable {
     let stopNumber: Int
     let routeNumber: Int
     let routeType: String
+    let stopTime: Date
+    
 }
 
 var busLocations: [CLLocationCoordinate2D] = [
@@ -99,7 +101,7 @@ struct MapView: View {
     @StateObject private var locationManager = LocationManager()
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
     @State private var myStop: RouteStopCoordinates? = nil
-    @State private var stopsPassed: Int = 0
+    @State private var stopsPassed: Int = 1
     @State private var routeAtBus = false
     @State var timeRemaining = 70
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -162,11 +164,27 @@ struct MapView: View {
                 timeRemaining -= 1
             }
             print(busLocations[70-timeRemaining])
-            print(route[stopsPassed])
-            if busLocations[70-timeRemaining].latitude == route[stopsPassed].latitude && busLocations[70-timeRemaining].longitude == route[stopsPassed].longitude {
-                stopsPassed += 1
-                print(stopsPassed)
+            print("Current route length: \(route.count), Trying to access index: \(stopsPassed)")
+            do {
+                // Check if index is valid before accessing
+                if stopsPassed < route.count {
+                    print(route[stopsPassed])
+                    if busLocations[70-timeRemaining].latitude == route[stopsPassed].latitude &&
+                       busLocations[70-timeRemaining].longitude == route[stopsPassed].longitude {
+                        stopsPassed += 1
+                        print("Stops passed: \(stopsPassed)")
+                    }
+                } else {
+                    print("Stop index \(stopsPassed) is out of bounds. Route only has \(route.count) stops.")
+                }
+            } catch {
+                print("Error accessing route data: \(error)")
             }
+//            print(route[stopsPassed])
+//            if busLocations[70-timeRemaining].latitude == route[stopsPassed].latitude && busLocations[70-timeRemaining].longitude == route[stopsPassed].longitude {
+//                stopsPassed += 1
+//                print(stopsPassed)
+//            }
                 
         }
         
@@ -184,34 +202,79 @@ struct MapView: View {
     }
     
     
-        
-    
     func fetchBusStops() async {
         do {
+            let decoder = JSONDecoder()
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+            decoder.dateDecodingStrategy = .formatted(dateFormatter)
+            
             let routeData: [RouteStops] = try await supabase
                 .from("route_stops")
-                .select("bus_stop (*), route_number, route_type, stop_number")
+                .select("bus_stop (*), route_number, route_type, stop_number, stop_time")
                 .eq("route_type", value: "pickup")
                 .order("stop_number", ascending: true)
                 .execute()
                 .value
             
-                    
             for busStop in routeData {
-                busStops.append(RouteStopCoordinates(id: UUID(), coordinate: CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon), name: busStop.busStop.name, stopNumber: busStop.stopNumber, routeNumber: busStop.routeNumber, routeType: busStop.routeType))
-                route.append(CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon))
+                busStops.append(RouteStopCoordinates(
+                    id: UUID(),
+                    coordinate: CLLocationCoordinate2D(
+                        latitude: busStop.busStop.lat,
+                        longitude: busStop.busStop.lon
+                    ),
+                    name: busStop.busStop.name,
+                    stopNumber: busStop.stopNumber,
+                    routeNumber: busStop.routeNumber,
+                    routeType: busStop.routeType,
+                    stopTime: busStop.stopTime
+                ))
+                route.append(CLLocationCoordinate2D(
+                    latitude: busStop.busStop.lat,
+                    longitude: busStop.busStop.lon
+                ))
                 if busStop.stopNumber == 6 {
-                    myStop = RouteStopCoordinates(id: UUID(), coordinate: CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon), name: busStop.busStop.name, stopNumber: busStop.stopNumber, routeNumber: busStop.routeNumber, routeType: busStop.routeType)
+                    myStop = RouteStopCoordinates(id: UUID(), coordinate: CLLocationCoordinate2D(
+                        latitude: busStop.busStop.lat,
+                        longitude: busStop.busStop.lon
+                    ), name: busStop.busStop.name, stopNumber: busStop.stopNumber, routeNumber: busStop.routeNumber, routeType: busStop.routeType, stopTime: busStop.stopTime)
                 }
             }
             print(routeData)
             getDirections()
-            
         } catch {
-            debugPrint(error)
+            print("Error fetching bus stops: \(error)")
         }
-        
     }
+    
+//    func fetchBusStops() async {
+//        do {
+//            let routeData: [RouteStops] = try await supabase
+//                .from("route_stops")
+//                .select("bus_stop (*), route_number, route_type, stop_number, stop_time")
+//                .eq("route_type", value: "pickup")
+//                .order("stop_number", ascending: true)
+//                .execute()
+//                .value
+//            
+//            
+//                    
+//            for busStop in routeData {
+//                busStops.append(RouteStopCoordinates(id: UUID(), coordinate: CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon), name: busStop.busStop.name, stopNumber: busStop.stopNumber, routeNumber: busStop.routeNumber, routeType: busStop.routeType, stopTime: busStop.stopTime))
+//                route.append(CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon))
+//                if busStop.stopNumber == 6 {
+//                    myStop = RouteStopCoordinates(id: UUID(), coordinate: CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon), name: busStop.busStop.name, stopNumber: busStop.stopNumber, routeNumber: busStop.routeNumber, routeType: busStop.routeType, stopTime: busStop.stopTime)
+//                }
+//            }
+//            print(routeData)
+//            getDirections()
+//            
+//        } catch {
+//            debugPrint(error)
+//        }
+//        
+//    }
     
     func getDirections() {
         
