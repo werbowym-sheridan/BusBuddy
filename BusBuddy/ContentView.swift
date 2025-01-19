@@ -50,15 +50,12 @@ struct ContentView: View {
             // - The ”Log in” button
             
             VStack {
-                
                 Text("SwiftUI Login demo")
                     .modifier(TitleStyle())
-                
                 Button("Log in") {
                     login()
                 }
                 .buttonStyle(MyButtonStyle())
-                
             } // VStack
             
         } // if isAuthenticated
