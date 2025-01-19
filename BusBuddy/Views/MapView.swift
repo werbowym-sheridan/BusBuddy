@@ -181,6 +181,13 @@ struct MapView: View {
         .task {
             await fetchBusStops()
         }
+        VStack{
+            Spacer()
+            MainContentCardView(
+                myStop: myStop,
+                currentBusLocation: busLocations[70-timeRemaining]
+            )
+        }
     }
     
     
