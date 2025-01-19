@@ -23,6 +23,10 @@ struct MapView: View {
     @State private var routeDirections: [MKRoute] = []
     @StateObject private var locationManager = LocationManager()
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var myStop: RouteStopCoordinates? = nil
+    @State private var busPosition = CLLocationCoordinate2D(latitude: 43.467873743656746, longitude: -79.73600568746207)
+    @State private var stopsPassed: Int = 0
+    @State private var routeAtBus = false
     
     var body: some View {
         Map(position: $position){
@@ -31,9 +35,31 @@ struct MapView: View {
                     .stroke(.red, lineWidth: 2)
             }
             ForEach(busStops) { busStop in
-                Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .center) {
-                    Image(systemName: "circle.fill")
-                        .foregroundStyle(.red)
+                if busStop.name == myStop!.name {
+                    Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .center) {
+                        Image(systemName: "circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundStyle(.green)
+                    }
+                } else {
+                    Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .center) {
+                        Image(systemName: "circle.fill")
+                            .foregroundStyle(.red)
+                    }
+                }
+                
+            }
+            Annotation("", coordinate: busPosition, anchor: .center) {
+                ZStack {
+                    Circle()
+                        .fill(.yellow)
+                        .frame(width: 60, height: 60)
+                                
+                    Image(systemName: "bus.fill")
+                        .resizable()
+                        .aspectRatio(1.0, contentMode: .fit)
+                        .frame(width: 30, height: 30)
+                        .foregroundColor(.black)
                 }
             }
             
@@ -68,6 +94,12 @@ struct MapView: View {
             for busStop in routeData {
                 busStops.append(RouteStopCoordinates(id: UUID(), coordinate: CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon), name: busStop.busStop.name, stopNumber: busStop.stopNumber, routeNumber: busStop.routeNumber, routeType: busStop.routeType))
                 route.append(CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon))
+                if busStop.stopNumber == 4 {
+                    route.append(busPosition)
+                }
+                if busStop.stopNumber == 6 {
+                    myStop = RouteStopCoordinates(id: UUID(), coordinate: CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon), name: busStop.busStop.name, stopNumber: busStop.stopNumber, routeNumber: busStop.routeNumber, routeType: busStop.routeType)
+                }
             }
             print(routeData)
             getDirections()
