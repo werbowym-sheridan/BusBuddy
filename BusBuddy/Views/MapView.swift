@@ -39,16 +39,18 @@ struct MapView: View {
             
             ForEach(busStops) { busStop in
                 if busStop.name == myStop!.name {
-                    Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .bottom) {
-                        Image(systemName: "drop.fill")
-                            .font(.system(size: 50))
-                            .foregroundStyle(.busBuddyYellow)
-                            .rotationEffect(.degrees(180))
-                        }
                     Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .center) {
-                        Image(systemName: "circle.fill")
-                            .foregroundStyle(.busBuddyYellow)
-                            .font(.system(size: 10))
+                        ZStack {
+                            Circle()
+                                .fill(.busBuddyYellow)
+                                .frame(width: 45, height: 45)
+                            
+                            Image(systemName: "figure.wave.circle")
+                                .resizable()
+                                .aspectRatio(1.0, contentMode: .fit)
+                                .frame(width: 45, height: 45)
+                                .foregroundStyle(.black)
+                        }
                     }
                 } else {
                         Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .center) {
