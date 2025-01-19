@@ -99,32 +99,18 @@ struct MapView: View {
     @StateObject private var locationManager = LocationManager()
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
     @State private var myStop: RouteStopCoordinates? = nil
-    @State private var busPosition = CLLocationCoordinate2D(latitude: 43.467873743656746, longitude: -79.73600568746207)
     @State private var stopsPassed: Int = 0
     @State private var routeAtBus = false
+    @State var timeRemaining = 70
+    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
     var body: some View {
         Map(position: $position){
             ForEach(routeDirections, id: \.self) { routeSection in
                 MapPolyline(routeSection)
-                    .stroke(.red, lineWidth: 2)
+                    .stroke(.black, lineWidth: 2)
             }
-            ForEach(busStops) { busStop in
-                if busStop.name == myStop!.name {
-                    Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .center) {
-                        Image(systemName: "circle.fill")
-                            .font(.system(size: 20))
-                            .foregroundStyle(.green)
-                    }
-                } else {
-                    Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .center) {
-                        Image(systemName: "circle.fill")
-                            .foregroundStyle(.red)
-                    }
-                }
-                
-            }
-            Annotation("", coordinate: busPosition, anchor: .center) {
+            Annotation("", coordinate: busLocations[70-timeRemaining], anchor: .center) {
                 ZStack {
                     Circle()
                         .fill(.yellow)
@@ -138,7 +124,52 @@ struct MapView: View {
                 }
             }
             
+            ForEach(busStops) { busStop in
+                if busStop.name == myStop!.name {
+                    Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .bottom) {
+                        Image(systemName: "drop.fill")
+                            .font(.system(size: 50))
+                            .foregroundStyle(.yellow)
+                            .rotationEffect(.degrees(180))
+                        }
+                    Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .center) {
+                        Image(systemName: "circle.fill")
+                            .foregroundStyle(.yellow)
+                            .font(.system(size: 10))
+                    }
+                } else {
+                    if busStop.stopNumber <= stopsPassed {
+                        Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .center) {
+                            Image(systemName: "circle.fill")
+                                .foregroundStyle(.black)
+                                .font(.system(size: 12))
+                        }
+                    } else {
+                        Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .center) {
+                            Image(systemName: "circle.fill")
+                                .foregroundStyle(.black)
+                                .font(.system(size: 12))
+                        }
+                        
+                    }
+                }
+                
+            }
+            
         }
+        .onReceive(timer) { _ in
+            if timeRemaining > 0 {
+                timeRemaining -= 1
+            }
+            print(busLocations[70-timeRemaining])
+            print(route[stopsPassed])
+            if busLocations[70-timeRemaining].latitude == route[stopsPassed].latitude && busLocations[70-timeRemaining].longitude == route[stopsPassed].longitude {
+                stopsPassed += 1
+                print(stopsPassed)
+            }
+                
+        }
+        
         .mapControls{
             MapUserLocationButton()
             MapPitchToggle()
@@ -169,9 +200,6 @@ struct MapView: View {
             for busStop in routeData {
                 busStops.append(RouteStopCoordinates(id: UUID(), coordinate: CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon), name: busStop.busStop.name, stopNumber: busStop.stopNumber, routeNumber: busStop.routeNumber, routeType: busStop.routeType))
                 route.append(CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon))
-                if busStop.stopNumber == 4 {
-                    route.append(busPosition)
-                }
                 if busStop.stopNumber == 6 {
                     myStop = RouteStopCoordinates(id: UUID(), coordinate: CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon), name: busStop.busStop.name, stopNumber: busStop.stopNumber, routeNumber: busStop.routeNumber, routeType: busStop.routeType)
                 }
