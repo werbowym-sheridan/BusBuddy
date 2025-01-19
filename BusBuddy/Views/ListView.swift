@@ -24,17 +24,19 @@ struct ListView: View {
     var body: some View {
         ScrollView {
                     VStack(spacing: 16) {
+                        
                         // Custom connecting line with dots
+                        Spacer().padding(.top, 72)
                         ZStack(alignment: .top) {
                             // Connecting line
                             GeometryReader { geometry in
                                 VStack(spacing: 0) {
                                     if busStops.count > 0 {
                                         Rectangle()
-                                            .fill(Color.gray.opacity(0.5))
+                                            .fill(Color.gray)
                                             .frame(width: 2)
-                                            .frame(height: geometry.size.height * 0.97) // Adjust the multiplier to control line length
-                                            .offset(x: 23, y: 20)
+                                            .frame(height: geometry.size.height * 0.91) // Adjust the multiplier to control line length
+                                            .offset(x: 23, y: 30)
                                     }
                                 }
                             }
@@ -44,9 +46,11 @@ struct ListView: View {
                                     RouteCardView(
                                         stopName: stop.name,
                                         travelTime: calculateTravelTime(for: stop),
-                                        arrivalTime: calculateArrivalTime(for: stop),
+                                        arrivalTime: /*calculateArrivalTime(for: stop),*/
+                                        stop.stopTime,
                                         isCurrentZone: isUserZone(stop),
                                         stopNumber: stop.stopNumber
+                                        
                                     )
                                 }
                             }
@@ -94,17 +98,17 @@ struct ListView: View {
         do {
             let routeData: [RouteStops] = try await supabase
                 .from("route_stops")
-                .select("bus_stop (*), route_number, route_type, stop_number")
+                .select("bus_stop (*), route_number, route_type, stop_number, stop_time")
                 .eq("route_type", value: "pickup")
                 .order("stop_number", ascending: true)
                 .execute()
                 .value
                     
             for busStop in routeData {
-                busStops.append(RouteStopCoordinates(id: UUID(), coordinate: CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon), name: busStop.busStop.name, stopNumber: busStop.stopNumber, routeNumber: busStop.routeNumber, routeType: busStop.routeType))
+                busStops.append(RouteStopCoordinates(id: UUID(), coordinate: CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon), name: busStop.busStop.name, stopNumber: busStop.stopNumber, routeNumber: busStop.routeNumber, routeType: busStop.routeType, stopTime: busStop.stopTime))
                 route.append(CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon))
             }
-//            print(routeData)
+            print(routeData)
             
         } catch {
             debugPrint(error)
@@ -113,25 +117,16 @@ struct ListView: View {
     }
     
     // Calculate travel time from first stop to current stop
-        private func calculateTravelTime(for stop: RouteStopCoordinates) -> Int {
+    private func calculateTravelTime(for stop: RouteStopCoordinates) -> Int {
             guard let firstStop = busStops.first else { return 0 }
             
-            var totalTime = 0
-            for i in 0..<busStops.count {
-                if busStops[i].stopNumber <= stop.stopNumber {
-                    if i > 0 {
-                        let distance = calculateDistance(
-                            from: busStops[i-1].coordinate,
-                            to: busStops[i].coordinate
-                        )
-                        // Assume average speed of 30 km/h
-                        totalTime += Int((distance / 30.0) * 60)
-                    }
-                } else {
-                    break
-                }
-            }
-            return totalTime
+            // Calculate time difference between current stop and first stop
+            let timeInterval = stop.stopTime.timeIntervalSince(firstStop.stopTime)
+            
+            // Convert timeInterval (seconds) to minutes and round to nearest minute
+            let minutes = Int(round(timeInterval / 60.0))
+            
+            return minutes
         }
         
         // Calculate arrival time based on current time + travel time

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import MapKit
+import Combine
 
 struct RouteStopCoordinates: Identifiable {
     var id: UUID
@@ -15,6 +16,173 @@ struct RouteStopCoordinates: Identifiable {
     let stopNumber: Int
     let routeNumber: Int
     let routeType: String
+    let stopTime: Date
+}
+struct MapView: View {
+    @State private var busStops: [RouteStopCoordinates] = []
+    @State private var route: [CLLocationCoordinate2D] = []
+    @State private var routeDirections: [MKRoute] = []
+    @StateObject private var locationManager = LocationManager()
+    @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var myStop: RouteStopCoordinates? = nil
+    @State private var stopsPassed: Int = 0
+    @State var timeRemaining = 0
+    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    
+    
+    var body: some View {
+        Map(position: $position){
+            ForEach(routeDirections, id: \.self) { routeSection in
+                MapPolyline(routeSection)
+                    .stroke(.black, lineWidth: 2)
+            }
+            
+            ForEach(busStops) { busStop in
+                if busStop.name == myStop!.name {
+                    Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .center) {
+                        ZStack{
+                            Circle()
+                                .fill(.busBuddyYellow)
+                                .frame(width: 45, height: 45)
+                            Image(systemName: "figure.wave.circle")
+                                .resizable()
+                                .aspectRatio(1.0, contentMode: .fit)
+                                .frame(width: 45, height: 45)
+                                .foregroundStyle(.black)
+                        }
+                    }
+                } else {
+                    Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .center) {
+                        Image(systemName: "circle.fill")
+                            .foregroundStyle(.black)
+                            .font(.system(size: 12))
+                            .zIndex(-2)
+                    }
+                }
+            }
+            Annotation("", coordinate: busLocations[72-timeRemaining], anchor: .center) {
+                ZStack{
+                    Circle()
+                        .fill(.busBuddyYellow)
+                        .frame(width: 60, height: 60)
+                    Image(systemName: "bus.fill")
+                        .resizable()
+                        .aspectRatio(1.0, contentMode: .fit)
+                        .frame(width: 30, height: 30)
+                        .foregroundColor(.black)
+                }
+            }
+        }
+        .onReceive(timer) { _ in
+            if timeRemaining > 0 {
+                timeRemaining -= 1
+            }
+            if busLocations[72-timeRemaining].latitude == route[stopsPassed].latitude && busLocations[72-timeRemaining].longitude == route[stopsPassed].longitude {
+                stopsPassed += 1
+            }
+        }
+        .onAppear {
+            locationManager.requestAuthorization()
+        }
+        .mapStyle(.standard(elevation: .flat))
+        .task {
+            await fetchBusStops()
+        }
+        VStack{
+            Spacer()
+            MainContentCardView(
+                myStop: myStop,
+                currentBusLocation: busLocations[72-timeRemaining]
+            )
+        }
+        Button("Test Drive") {
+            timeRemaining = 72
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.regular)
+        .font(.custom("Pally Variable", size: 18))
+        .background(Color.accentColor)
+        .foregroundColor(Color.black)
+        .position(x: 80, y: 600)
+        
+    }
+    
+    
+    
+    
+    func fetchBusStops() async {
+        do {
+            let decoder = JSONDecoder()
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+            decoder.dateDecodingStrategy = .formatted(dateFormatter)
+            
+            let routeData: [RouteStops] = try await supabase
+                .from("route_stops")
+                .select("bus_stop (*), route_number, route_type, stop_number, stop_time")
+                .eq("route_type", value: "pickup")
+                .order("stop_number", ascending: true)
+                .execute()
+                .value
+            
+            
+            for busStop in routeData {
+                busStops.append(RouteStopCoordinates(
+                    id: UUID(),
+                    coordinate: CLLocationCoordinate2D(
+                        latitude: busStop.busStop.lat,
+                        longitude: busStop.busStop.lon
+                    ),
+                    name: busStop.busStop.name,
+                    stopNumber: busStop.stopNumber,
+                    routeNumber: busStop.routeNumber,
+                    routeType: busStop.routeType,
+                    stopTime: busStop.stopTime
+                ))
+                route.append(CLLocationCoordinate2D(
+                    latitude: busStop.busStop.lat,
+                    longitude: busStop.busStop.lon
+                ))
+                if busStop.stopNumber == 6 {
+                    myStop = RouteStopCoordinates(id: UUID(), coordinate: CLLocationCoordinate2D(
+                        latitude: busStop.busStop.lat,
+                        longitude: busStop.busStop.lon
+                    ), name: busStop.busStop.name, stopNumber: busStop.stopNumber, routeNumber: busStop.routeNumber, routeType: busStop.routeType, stopTime: busStop.stopTime)
+                }
+            }
+            print(routeData)
+            getDirections()
+            
+        } catch {
+            debugPrint(error)
+        }
+        
+    }
+    
+    func getDirections() {
+        
+        for i in 0...self.route.count-2 {
+            let request = MKDirections.Request()
+            request.source = MKMapItem(placemark: MKPlacemark(coordinate: self.route[i]))
+            request.destination = MKMapItem(placemark: MKPlacemark(coordinate: self.route[i+1]))
+            
+            Task {
+                let directions = MKDirections(request: request)
+                let response = try? await directions.calculate()
+                if response?.routes.first != nil {
+                    routeDirections.append(response!.routes.first!)
+                }
+                
+            }
+            
+            
+            
+        }
+    }
+}
+
+#Preview {
+    MapView()
 }
 
 var busLocations: [CLLocationCoordinate2D] = [
@@ -67,6 +235,8 @@ var busLocations: [CLLocationCoordinate2D] = [
     CLLocationCoordinate2D(latitude: 43.4746264423058, longitude: -79.7277247727561), // stop 6: Westfield Tr & River Glen Blvd
     CLLocationCoordinate2D(latitude: 43.4746264423059, longitude: -79.7277247727562), // stop 6: Westfield Tr & River Glen Blvd
     CLLocationCoordinate2D(latitude: 43.4746264423059, longitude: -79.7277247727562), // stop 6: Westfield Tr & River Glen Blvd
+    CLLocationCoordinate2D(latitude: 43.4746264423059, longitude: -79.7277247727562), // stop 6: Westfield Tr & River Glen Blvd
+    CLLocationCoordinate2D(latitude: 43.4746264423059, longitude: -79.7277247727562), // stop 6: Westfield Tr & River Glen Blvd
     CLLocationCoordinate2D(latitude: 43.475110565298294, longitude: -79.72664696748991),
     CLLocationCoordinate2D(latitude: 43.47594282371329, longitude: -79.72572569893046),
     CLLocationCoordinate2D(latitude: 43.47634530522821, longitude: -79.72522746185238),
@@ -88,160 +258,4 @@ var busLocations: [CLLocationCoordinate2D] = [
     CLLocationCoordinate2D(latitude: 43.47617476256685, longitude: -79.71377740907050), // stop 8: post's corners
     CLLocationCoordinate2D(latitude: 43.47617476256685, longitude: -79.71377740907050), // stop 8: post's corners
     CLLocationCoordinate2D(latitude: 43.47617476256685, longitude: -79.71377740907050), // stop 8: post's corners
-    CLLocationCoordinate2D(latitude: 43.47617476256684, longitude: -79.71377740907049) // stop 8: post's corners
-]
-
-
-struct MapView: View {
-    @State private var busStops: [RouteStopCoordinates] = []
-    @State private var route: [CLLocationCoordinate2D] = []
-    @State private var routeDirections: [MKRoute] = []
-    @StateObject private var locationManager = LocationManager()
-    @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
-    @State private var myStop: RouteStopCoordinates? = nil
-    @State private var stopsPassed: Int = 0
-    @State private var routeAtBus = false
-    @State var timeRemaining = 70
-    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    
-    var body: some View {
-        Map(position: $position){
-            ForEach(routeDirections, id: \.self) { routeSection in
-                MapPolyline(routeSection)
-                    .stroke(.black, lineWidth: 2)
-            }
-            Annotation("", coordinate: busLocations[70-timeRemaining], anchor: .center) {
-                ZStack {
-                    Circle()
-                        .fill(.yellow)
-                        .frame(width: 60, height: 60)
-                                
-                    Image(systemName: "bus.fill")
-                        .resizable()
-                        .aspectRatio(1.0, contentMode: .fit)
-                        .frame(width: 30, height: 30)
-                        .foregroundColor(.black)
-                }
-            }
-            
-            ForEach(busStops) { busStop in
-                if busStop.name == myStop!.name {
-                    Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .bottom) {
-                        Image(systemName: "drop.fill")
-                            .font(.system(size: 50))
-                            .foregroundStyle(.yellow)
-                            .rotationEffect(.degrees(180))
-                        }
-                    Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .center) {
-                        Image(systemName: "circle.fill")
-                            .foregroundStyle(.yellow)
-                            .font(.system(size: 10))
-                    }
-                } else {
-                    if busStop.stopNumber <= stopsPassed {
-                        Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .center) {
-                            Image(systemName: "circle.fill")
-                                .foregroundStyle(.black)
-                                .font(.system(size: 12))
-                        }
-                    } else {
-                        Annotation(busStop.name, coordinate: busStop.coordinate, anchor: .center) {
-                            Image(systemName: "circle.fill")
-                                .foregroundStyle(.black)
-                                .font(.system(size: 12))
-                        }
-                        
-                    }
-                }
-                
-            }
-            
-        }
-        .onReceive(timer) { _ in
-            if timeRemaining > 0 {
-                timeRemaining -= 1
-            }
-            print(busLocations[70-timeRemaining])
-            print(route[stopsPassed])
-            if busLocations[70-timeRemaining].latitude == route[stopsPassed].latitude && busLocations[70-timeRemaining].longitude == route[stopsPassed].longitude {
-                stopsPassed += 1
-                print(stopsPassed)
-            }
-                
-        }
-        
-        .mapControls{
-            MapUserLocationButton()
-            MapPitchToggle()
-        }
-        .onAppear {
-            locationManager.requestAuthorization()
-        }
-        .mapStyle(.standard(elevation: .flat))
-        .task {
-            await fetchBusStops()
-        }
-        VStack{
-            Spacer()
-            MainContentCardView(
-                myStop: myStop,
-                currentBusLocation: busLocations[70-timeRemaining]
-            )
-        }
-    }
-    
-    
-        
-    
-    func fetchBusStops() async {
-        do {
-            let routeData: [RouteStops] = try await supabase
-                .from("route_stops")
-                .select("bus_stop (*), route_number, route_type, stop_number")
-                .eq("route_type", value: "pickup")
-                .order("stop_number", ascending: true)
-                .execute()
-                .value
-            
-                    
-            for busStop in routeData {
-                busStops.append(RouteStopCoordinates(id: UUID(), coordinate: CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon), name: busStop.busStop.name, stopNumber: busStop.stopNumber, routeNumber: busStop.routeNumber, routeType: busStop.routeType))
-                route.append(CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon))
-                if busStop.stopNumber == 6 {
-                    myStop = RouteStopCoordinates(id: UUID(), coordinate: CLLocationCoordinate2D(latitude: busStop.busStop.lat, longitude: busStop.busStop.lon), name: busStop.busStop.name, stopNumber: busStop.stopNumber, routeNumber: busStop.routeNumber, routeType: busStop.routeType)
-                }
-            }
-            print(routeData)
-            getDirections()
-            
-        } catch {
-            debugPrint(error)
-        }
-        
-    }
-    
-    func getDirections() {
-        
-        for i in 0...self.route.count-2 {
-            let request = MKDirections.Request()
-            request.source = MKMapItem(placemark: MKPlacemark(coordinate: self.route[i]))
-            request.destination = MKMapItem(placemark: MKPlacemark(coordinate: self.route[i+1]))
-            
-            Task {
-                let directions = MKDirections(request: request)
-                let response = try? await directions.calculate()
-                if response?.routes.first != nil {
-                    routeDirections.append(response!.routes.first!)
-                }
-            
-        }
-        
-            
-            
-        }
-    }
-}
-
-#Preview {
-    MapView()
-}
+    CLLocationCoordinate2D(latitude: 43.47617476256684, longitude: -79.71377740907049)] // stop 8: post's corners
