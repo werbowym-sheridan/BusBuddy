@@ -73,7 +73,7 @@ struct NavigationBar: View {
                                 Circle()
                                     .stroke(Color.black, lineWidth: 1) // Add circle around the button
                                     .frame(width: 48, height: 48)    // Match circle size
-                                Image(systemName: "arrow.right.square")
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
                                     .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(.black)         // Set icon color to black
                             }
@@ -144,29 +144,37 @@ struct NavigationBar: View {
                 VStack(spacing: 16) {
                     // Name
                     Text("Omar Al-Dulaimi")
-                        .font(.custom("Marker Felt", size: 24))
+                        .font(.custom("Pally Variable", size: 32))
+                        .bold()
                         .padding(.top, 8)
                     
                     // Profile Image
                     Image("omar")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 100, height: 100)
+                        .frame(width: 128, height: 128)
                         .clipShape(Circle())
                         .overlay(
                             Circle()
-                                .stroke(Color.black, lineWidth: 1)
+                                .stroke(Color.black, lineWidth: 2)
                         )
                     
+                    // Email
+                    Text(profile.email)
+                        .font(.custom("Pally Variable", size: 16))
+                        .foregroundColor(.gray)
+                   
                     // Organization ID Section
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Organization ID")
-                            .font(.custom("Marker Felt", size: 18))
-                        Text("qwrq")
+                            .font(.custom("Pally Variable", size: 18))
+                            .bold()
+                        Text("SHER_TRAF")
+                            .font(.custom("Pally Variable", size: 20))
                             .padding(12)
                             .frame(maxWidth: .infinity)
                             .background(
-                                RoundedRectangle(cornerRadius: 8)
+                                RoundedRectangle(cornerRadius: 32)
                                     .stroke(Color.black, lineWidth: 1)
                             )
                     }
@@ -175,30 +183,33 @@ struct NavigationBar: View {
                     // User ID Section
                     VStack(alignment: .leading, spacing: 4) {
                         Text("User ID")
-                            .font(.custom("Marker Felt", size: 18))
-                        Text("tqwreqwh")
+                            .font(.custom("Pally Variable", size: 18))
+                            .bold()
+                        Text("Max5713")
+                            .font(.custom("Pally Variable", size: 20))
                             .padding(12)
                             .frame(maxWidth: .infinity)
                             .background(
-                                RoundedRectangle(cornerRadius: 8)
+                                RoundedRectangle(cornerRadius: 32)
                                     .stroke(Color.black, lineWidth: 1)
+                                
                             )
                     }
                     .padding(.horizontal)
                     
-                    // Email
-                    Text(profile.email)
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
+                   
                     
                     // Sync/Login Button
                     Button(action: onLogout) {
                         Text("Sync/Login")
-                            .font(.custom("Marker Felt", size: 18))
+                            .font(.custom("Pally Variable", size: 18))
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color("BusBuddy_Yellow"))
-                            .cornerRadius(8)
+                            .foregroundStyle(Color.blue)
+                            .bold()
+//                            .colorInvert()
+//                            .background(Color("BusBuddy_Yellow"))
+                            .cornerRadius(32)
                     }
                     .padding(.horizontal)
                 }

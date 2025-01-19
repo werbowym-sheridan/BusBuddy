@@ -14,7 +14,7 @@ struct MainContentCardView: View {
     @State private var busStops: [RouteStopCoordinates] = []
     @State private var countdownSeconds: Int = 7
     @State private var hasStartedCountdown: Bool = false
-    private let barHeight: CGFloat = 50
+    private let barHeight: CGFloat = 64
 
     private var countdownText: String {
         "Bus arriving at your stop in \(countdownSeconds) second\(countdownSeconds != 1 ? "s" : "")!"
@@ -27,7 +27,8 @@ struct MainContentCardView: View {
                     if isAtDestination(currentBusLocation, myCurrentStop.coordinate) {
                         ZStack {
                             Text("Bus has arrived!")
-                                .font(.headline)
+                                .font(.custom("Pally Variable", size: 24))
+                                .bold()
                                 .foregroundColor(.black)
                                 .padding()
                         }
@@ -35,7 +36,8 @@ struct MainContentCardView: View {
                     } else if isAtStop5Area(currentBusLocation) {
                         ZStack {
                             Text(countdownText)
-                                .font(.headline)
+                                .font(.custom("Pally Variable", size: 18))
+                                .bold()
                                 .foregroundColor(.black)
                                 .padding()
                         }
@@ -69,15 +71,15 @@ struct MainContentCardView: View {
                     } else {
                         ZStack {
                             Text("Bus is en route...")
-                                .font(.headline)
+                                .font(.custom("Pally Variable", size: 18))
                                 .foregroundColor(.black)
-                                .padding()
+                                .padding(.vertical, 32)
                         }
                     }
                 } else {
                     ZStack {
                         Text("Loading schedule...")
-                            .font(.headline)
+                            .font(.custom("Pally Variable", size: 16))
                             .foregroundColor(.black)
                             .padding()
                     }
@@ -91,7 +93,7 @@ struct MainContentCardView: View {
                 RoundedRectangle(cornerRadius: 36)
                     .stroke(Color.black, lineWidth: 1)
             )
-            .offset(y: -50)
+            .offset(y: -32)
         }
         .task {
             await fetchBusStops()
@@ -129,7 +131,7 @@ struct MainContentCardView: View {
         do {
             let routeData: [RouteStops] = try await supabase
                 .from("route_stops")
-                .select("bus_stop (*), route_number, route_type, stop_number")
+                .select("bus_stop (*), route_number, route_type, stop_number, stop_time")
                 .eq("route_type", value: "pickup")
                 .order("stop_number", ascending: true)
                 .execute()
@@ -145,7 +147,8 @@ struct MainContentCardView: View {
                     name: busStop.busStop.name,
                     stopNumber: busStop.stopNumber,
                     routeNumber: busStop.routeNumber,
-                    routeType: busStop.routeType
+                    routeType: busStop.routeType,
+                    stopTime: busStop.stopTime
                 ))
             }
         } catch {

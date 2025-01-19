@@ -35,30 +35,29 @@ struct ContentView: View {
             
             VStack(spacing: 24) {  // Added spacing for better visual hierarchy
                 // Title section
+                Spacer().frame(height: 64)
                 VStack(spacing: 8) {  // Inner VStack for title and tagline with closer spacing
                     Text("BusBuddy")
-                        .font(.custom("Marker Felt", size: 36))  // Using Marker Felt to match image
+                        .font(.custom("Pally Variable", size: 48)).bold()
                         .foregroundColor(.black)
                     
                     Text("Get dressed, we got the rest")
-                        .font(.custom("Marker Felt", size: 18))
+                        .font(.custom("Neco Variable", size: 18))
                         .foregroundColor(.black)
                 }
                 
                 Spacer()  // Pushes content to top portion
                 
                 // Login button
-                Button("Start") {  // Changed text to "Start" to match image
+                Button("Start") {
                     login()
                 }
-                .font(.custom("Marker Felt", size: 20))
+                .font(.custom("Pally Variable", size: 24))
                 .foregroundColor(.black)
-                .padding(
-                )
-//                .frame(maxWidth: .infinity)
+                .padding()
                 .frame(width: UIScreen.main.bounds.width - 32)
                 .background(Color("BusBuddy_Yellow"))
-                .cornerRadius(20)  // More rounded corners like in the image
+                .cornerRadius(36)  // More rounded corners like in the image
                 .overlay(
                     RoundedRectangle(cornerRadius: 36)
                         .stroke(Color.black, lineWidth: 1)
@@ -67,7 +66,7 @@ struct ContentView: View {
                 
                 // Bottom text
                 Text("Bus-tings moves since 2025")
-                    .font(.custom("Marker Felt", size: 14))
+                    .font(.custom("Neco Variable", size: 14))
                     .foregroundColor(.black)
             }
             .padding()

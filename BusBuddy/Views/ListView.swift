@@ -33,10 +33,10 @@ struct ListView: View {
                                 VStack(spacing: 0) {
                                     if busStops.count > 0 {
                                         Rectangle()
-                                            .fill(Color.gray.opacity(0.5))
+                                            .fill(Color.gray)
                                             .frame(width: 2)
                                             .frame(height: geometry.size.height * 0.91) // Adjust the multiplier to control line length
-                                            .offset(x: 23, y: 26)
+                                            .offset(x: 23, y: 30)
                                     }
                                 }
                             }
