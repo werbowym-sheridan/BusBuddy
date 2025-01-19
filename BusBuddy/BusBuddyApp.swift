@@ -11,8 +11,7 @@ import SwiftUI
 struct BusBuddyApp: App {
     var body: some Scene {
         WindowGroup {
-//            ContentView()
-            ListView()
+            ContentView()
         }
     }
 }

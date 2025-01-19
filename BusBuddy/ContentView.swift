@@ -12,51 +12,65 @@ struct ContentView: View {
     
     @State private var isAuthenticated = false
     @State var userProfile = Profile.empty
+    @State private var isMapViewActive = true
     
     var body: some View {
-        
         if isAuthenticated {
-            
-            // “Logged in” screen
-            // ------------------
-            // When the user is logged in, they should see:
-            //
-            // - The title text “You’re logged in!”
-            // - Their photo
-            // - Their name
-            // - Their email address
-            // - The "Log out” button
-            
-            VStack {
-                MapView()
-                
-//                UserImage(urlString: "images/omar.jpeg")
-//                
-//                
-//                Button("Log out") {
-//                    logout()
-//                }
-//                .buttonStyle(MyButtonStyle())
-                
-            } // VStack
+            ZStack {
+                if isMapViewActive {
+                    MapView()  // Map as background
+                } else {
+                    ListView()
+                }
+
+                VStack {
+                    NavigationBar(isMapViewActive: $isMapViewActive, profile: userProfile,
+                                  onLogout: logout)  // Passing the binding here
+                        .padding(.top, 8)
+                    Spacer()
+                }
+            }
             
         } else {
             
-            // “Logged out” screen
-            // ------------------
-            // When the user is logged out, they should see:
-            //
-            // - The title text “SwiftUI Login Demo”
-            // - The ”Log in” button
-            
-            VStack {
-                Text("SwiftUI Login demo")
-                    .modifier(TitleStyle())
-                Button("Log in") {
+            VStack(spacing: 24) {  // Added spacing for better visual hierarchy
+                // Title section
+                VStack(spacing: 8) {  // Inner VStack for title and tagline with closer spacing
+                    Text("BusBuddy")
+                        .font(.custom("Marker Felt", size: 36))  // Using Marker Felt to match image
+                        .foregroundColor(.black)
+                    
+                    Text("Get dressed, we got the rest")
+                        .font(.custom("Marker Felt", size: 18))
+                        .foregroundColor(.black)
+                }
+                
+                Spacer()  // Pushes content to top portion
+                
+                // Login button
+                Button("Start") {  // Changed text to "Start" to match image
                     login()
                 }
-                .buttonStyle(MyButtonStyle())
-            } // VStack
+                .font(.custom("Marker Felt", size: 20))
+                .foregroundColor(.black)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color("BusBuddy_Yellow"))
+                .cornerRadius(20)  // More rounded corners like in the image
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.black, lineWidth: 1)
+                )
+                .padding(.horizontal, 40)  // Add some side padding to make button narrower
+                
+                // Bottom text
+                Text("Bus-tings moves since 2025")
+                    .font(.custom("Marker Felt", size: 14))
+                    .foregroundColor(.black)
+            }
+            .padding()
+            .frame(maxHeight: .infinity)  // Makes VStack take full height
+
             
         } // if isAuthenticated
         
