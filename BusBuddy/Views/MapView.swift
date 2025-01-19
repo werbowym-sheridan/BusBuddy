@@ -7,6 +7,7 @@
 
 import SwiftUI
 import MapKit
+import Combine
 
 struct RouteStopCoordinates: Identifiable {
     var id: UUID
@@ -17,8 +18,6 @@ struct RouteStopCoordinates: Identifiable {
     let routeType: String
 }
 
-
-
 struct MapView: View {
     @State private var busStops: [RouteStopCoordinates] = []
     @State private var route: [CLLocationCoordinate2D] = []
@@ -27,8 +26,9 @@ struct MapView: View {
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
     @State private var myStop: RouteStopCoordinates? = nil
     @State private var stopsPassed: Int = 0
-    @State var timeRemaining = 72
+    @State var timeRemaining = 0
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    
     
     var body: some View {
         Map(position: $position){
@@ -85,10 +85,6 @@ struct MapView: View {
                 
         }
         
-        .mapControls{
-            MapUserLocationButton()
-            MapPitchToggle()
-        }
         .onAppear {
             locationManager.requestAuthorization()
         }
@@ -96,6 +92,13 @@ struct MapView: View {
         .task {
             await fetchBusStops()
         }
+        Button("start demo") {
+            timeRemaining = 72
+        }
+        .buttonStyle(.bordered)
+        .background(Color.busBuddyYellow)
+        .foregroundColor(Color.black)
+        .position(x: 80, y: 750)
     }
     
     
